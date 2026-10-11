@@ -1,0 +1,715 @@
+<title>Bedek Tzedek CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a working desk. Header + tab row on top, one panel of records below; forms open as a sheet on top. Logical (start/end) properties throughout so RTL and LTR both work. */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --sunk:#f6f8f9; --ink:#15222a; --muted:#5a6a73; --line:#d9e1e4;
+  --accent:#1d5a66; --accent-ink:#ffffff; --accent-soft:#dcebee;
+  --stamp:#a9681a; --stamp-soft:#f6ead9;
+  --good:#2c7a4b; --good-soft:#dff0e5; --bad:#b03a3a; --bad-soft:#f7e1e1; --neutral-soft:#e7ecee;
+  --f-display:"Frank Ruhl Libre",Georgia,serif;
+  --f-body:"IBM Plex Sans","IBM Plex Sans Hebrew",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+:root[lang="he"]{--f-body:"IBM Plex Sans Hebrew","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e161a; --surface:#152128; --sunk:#111b21; --ink:#e4ecef; --muted:#93a5ae; --line:#24343c;
+  --accent:#62b2bf; --accent-ink:#06252a; --accent-soft:#1a3a41;
+  --stamp:#e2a656; --stamp-soft:#3a2c17;
+  --good:#6cc48f; --good-soft:#173527; --bad:#e58181; --bad-soft:#3d1e1e; --neutral-soft:#1f2d34;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e161a; --surface:#152128; --sunk:#111b21; --ink:#e4ecef; --muted:#93a5ae; --line:#24343c;
+  --accent:#62b2bf; --accent-ink:#06252a; --accent-soft:#1a3a41;
+  --stamp:#e2a656; --stamp-soft:#3a2c17;
+  --good:#6cc48f; --good-soft:#173527; --bad:#e58181; --bad-soft:#3d1e1e; --neutral-soft:#1f2d34;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+*{box-sizing:border-box}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 60px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:28px;margin:0;letter-spacing:.2px}
+.brand .sub{font-family:var(--f-display);font-size:20px;color:var(--muted)}
+.hright{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sync{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--good)} .dot.off{background:var(--bad)}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.lang button{font:inherit;font-size:13px;font-weight:500;border:0;background:none;color:var(--muted);padding:5px 12px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+nav{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line)}
+nav button{font:inherit;font-weight:500;background:none;border:0;color:var(--muted);padding:8px 12px;border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav .n{font-family:var(--f-mono);font-size:12px;color:var(--muted);background:var(--neutral-soft);padding:0 6px;border-radius:10px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+.panel-head h2{font-family:var(--f-display);font-size:24px;margin:0;font-weight:700;text-wrap:balance}
+.explain{margin:4px 0 0;color:var(--muted);max-width:64ch;font-size:14px}
+.btn{font:inherit;font-weight:500;font-size:14px;border-radius:var(--r);padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad)} .btn.danger.armed{background:var(--bad);color:var(--surface);border-color:var(--bad)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar input[type=search],.toolbar select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);min-width:0}
+.toolbar input[type=search]{flex:1 1 200px}
+.toolbar label{font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:12px 16px;border-top:1px solid var(--line);cursor:pointer;align-items:center}
+.row:first-child{border-top:0}
+.row:hover{background:var(--sunk)}
+.row .main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.row .title{font-weight:600;overflow-wrap:anywhere}
+.row .meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
+.row .side{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.task{grid-template-columns:auto minmax(0,1fr) auto}
+.task input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.task.done .title{text-decoration:line-through;color:var(--muted)}
+.pill{font-size:12px;font-weight:500;padding:2px 9px;border-radius:12px;background:var(--neutral-soft);color:var(--ink);white-space:nowrap}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.stamp{background:var(--stamp-soft);color:var(--stamp)}
+.ex{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--stamp);border:1px dashed var(--stamp);padding:0 6px;border-radius:4px;font-weight:500}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.overdue{color:var(--bad);font-weight:500}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);margin-bottom:4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.kpi .lab{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+:root[lang="he"] .kpi .lab{font-size:13px;letter-spacing:0}
+.kpi .val{font-family:var(--f-mono);font-size:26px;font-weight:500;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:13px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card h3{margin:0;font-size:16px;font-weight:600}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:150px minmax(0,1fr) 32px;gap:10px;align-items:center;font-size:14px}
+.bar .track{height:10px;background:var(--neutral-soft);border-radius:5px;overflow:hidden}
+.bar .fill{display:block;height:100%;background:var(--accent);border-radius:5px}
+.bar .num{text-align:end}
+.section-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.section-title h3{font-family:var(--f-display);font-size:20px;margin:0}
+.welcome ol{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px}
+.banner{padding:10px 14px;border-radius:var(--r);background:var(--bad-soft);color:var(--bad);font-size:14px}
+.overlay{position:fixed;inset:0;background:rgba(10,20,25,.45);display:flex;justify-content:center;align-items:flex-start;padding:24px 16px;overflow-y:auto;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);border-radius:12px;width:100%;max-width:580px;padding:20px;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line)}
+.sheet h2{margin:0;font-family:var(--f-display);font-size:22px}
+.sheet .hint{margin:-8px 0 0;font-size:13px;color:var(--muted)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:13px;font-weight:500;color:var(--muted)}
+.fld input,.fld select,.fld textarea{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--sunk);color:var(--ink);width:100%}
+.fld input[type=tel],.fld input[type=email],.fld input[type=number],.fld input[type=date]{direction:ltr;text-align:start}
+:root[dir="rtl"] .fld input[type=tel],:root[dir="rtl"] .fld input[type=email],:root[dir="rtl"] .fld input[type=number],:root[dir="rtl"] .fld input[type=date]{text-align:right}
+.fld textarea{min-height:80px;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+.actions .end{display:flex;gap:8px;margin-inline-start:auto}
+.related{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.related h4{margin:0;font-size:14px}
+.related .list .row{padding:8px 12px}
+.err{color:var(--bad);font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--r);font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+@media (max-width:560px){.fields{grid-template-columns:1fr}.bar{grid-template-columns:120px minmax(0,1fr) 28px}.brand h1{font-size:24px}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .16s ease-out}@keyframes up{from{transform:translateY(8px);opacity:.6}}}
+.fld input[type=password]{direction:ltr}
+#who{gap:8px}
+.login{max-width:420px;margin:24px auto;width:100%}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand" id="brand"></div>
+    <div class="hright">
+      <div class="sync"><span class="dot" id="dot"></span><span id="syncText"></span></div>
+      <div class="sync" id="who"></div>
+      <div class="lang" role="group" aria-label="Language / שפה">
+        <button type="button" data-lang="he" lang="he">עברית</button><button type="button" data-lang="en" lang="en">English</button>
+      </div>
+    </div>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <nav id="tabs" role="tablist"></nav>
+  <main id="view"></main>
+</div>
+<div id="sheetRoot"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* =====================================================================
+   YOUR SUPABASE DETAILS: paste them between the quotes below, then save.
+   Find them in Supabase: your project -> "Connect" button (top of the page),
+   or Project Settings -> API Keys.
+   ===================================================================== */
+window.CRM_CONFIG = {
+  url: 'PASTE_PROJECT_URL_HERE',          // looks like https://abcdefgh.supabase.co
+  key: 'PASTE_PUBLISHABLE_KEY_HERE'       // starts with sb_publishable_ (or an older "anon" key)
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+/* ---------- language ---------- */
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let lang=LS.get('crm.lang')==='en'?'en':'he';
+
+/* Options: [stored value, English, Hebrew] */
+const CLAIM_TYPES=[['deposit','Rental deposit','פיקדון שכירות'],['flight','Flight delay / cancellation','עיכוב או ביטול טיסה'],['consumer','Consumer / faulty product','צרכנות / מוצר פגום'],['contractor','Contractor / renovation','קבלן / שיפוץ'],['spam','Spam messages','הודעות ספאם'],['other','Other','אחר']];
+const SOURCES=[['website','Website form','טופס באתר'],['phone','Phone call','שיחת טלפון'],['whatsapp','WhatsApp','וואטסאפ'],['referral','Referral','המלצה'],['social','Social media','רשתות חברתיות'],['other','Other','אחר']];
+const LEAD_STATUS=[['new','New','חדש'],['contacted','Contacted','נוצר קשר'],['qualified','Interested','מעוניין'],['lost','Not interested','לא מעוניין'],['converted','Became a client','הפך ללקוח']];
+const STAGES=[['new','New case','תיק חדש'],['docs','Collecting documents','איסוף מסמכים'],['demand','Demand letter sent','נשלח מכתב התראה'],['filed','Claim filed','הוגשה תביעה'],['hearing','Hearing scheduled','נקבע דיון'],['won','Won','זכייה'],['settled','Settled','פשרה'],['lost','Lost','הפסד']];
+const CLOSED=['won','settled','lost'];
+const label=(opts,v)=>{const o=opts.find(x=>x[0]===v);return o?(lang==='he'?o[2]:o[1]):'—'};
+
+const T={
+en:{
+ brand:'Bedek Tzedek CRM',brandSub:'בדק צדק',
+ connecting:'Connecting to your shared data…',live:'Live: changes appear for everyone',notConnected:'Not connected',connLost:'Connection lost',
+ bannerNoDb:'Couldn\'t reach Supabase. Check your internet connection and reload the page.',notConfigured:'Not set up yet',signedOut:'Not signed in',configTitle:'Almost there: connect your Supabase project',configBody:'Open this file in a text editor (Notepad is fine). Near the top, replace PASTE_PROJECT_URL_HERE and PASTE_PUBLISHABLE_KEY_HERE with your Project URL and publishable key from Supabase. Save the file and open it again.',loginTitle:'Sign in',loginExplain:'Use the email and password created for you in Supabase.',password:'Password',signIn:'Sign in',signingIn:'Signing in…',loginFail:'Wrong email or password. Try again.',signOut:'Sign out',bannerLost:'Lost the connection to the shared data. Reload the page to reconnect.',
+ tab_dash:'Dashboard',tab_leads:'Leads',tab_clients:'Clients',tab_cases:'Cases',tab_tasks:'Tasks',tab_team:'Team',
+ exp_leads:'People who might hire you but haven\'t signed yet. When one agrees, open it and press "Became a client" to move them to Clients.',
+ exp_clients:'People who signed with you. Open a client to see all their cases and tasks in one place.',
+ exp_cases:'The actual claims. Each case belongs to one client and moves through stages, from "New case" to Won, Settled or Lost.',
+ exp_tasks:'To-dos with a due date and a person responsible. Tick the box when it\'s done. Red dates are overdue.',
+ exp_team:'Everyone who works on leads and cases. Add people here first, so you can assign work to them.',
+ hint_leads:'Someone who contacted you about a claim.',hint_clients:'Someone who signed with you.',hint_cases:'One claim for one client.',hint_tasks:'Something someone needs to do by a date.',hint_team:'A person who works with you.',
+ new_leads:'New lead',new_clients:'New client',new_cases:'New case',new_tasks:'New task',new_team:'New team member',
+ edit_leads:'Edit lead',edit_clients:'Edit client',edit_cases:'Edit case',edit_tasks:'Edit task',edit_team:'Edit team member',
+ add_leads:'Add lead',add_clients:'Add client',add_cases:'Add case',add_tasks:'Add task',add_team:'Add team member',
+ added_leads:'Lead added',added_clients:'Client added',added_cases:'Case added',added_tasks:'Task added',added_team:'Team member added',
+ empty_leads:'No leads yet.',empty_clients:'No clients yet.',empty_cases:'No cases yet.',empty_tasks:'No tasks yet.',empty_team:'No team members yet.',
+ search_leads:'Search leads…',search_clients:'Search clients…',search_cases:'Search cases…',search_tasks:'Search tasks…',search_team:'Search team…',
+ pressNew:b=>`Press "${b}" to add the first one.`,tipTeam:'Tip: add your team first (Team tab), so you can assign work.',
+ f_name:'Full name',f_role:'Role (e.g. Sales, Case manager)',f_phone:'Phone',f_email:'Email',f_claimTypeQ:'What is the claim about?',f_source:'How did they find you?',f_status:'Status',
+ f_ownerLead:'Who handles this lead',f_notes:'Notes',f_ownerClient:'Main contact on your team',f_title:'Short case name (e.g. "Deposit vs. landlord")',f_client:'Client',
+ f_claimType:'Type of claim',f_amount:'Amount claimed (₪)',f_stage:'Stage',f_hearing:'Hearing date',f_ownerCase:'Who handles this case',
+ f_taskTitle:'What needs doing',f_due:'Due date',f_ownerTask:'Who does it',f_caseRel:'Related case (optional)',f_clientRel:'Related client (optional)',
+ everyone:'Everyone',unassigned:'Unassigned',chooseClient:'Choose a client',none:'None',noClient:'No client',
+ showClosedCases:'Show closed cases',showClosedLeads:'Show converted & lost',showDone:'Show done tasks',
+ loading:'Loading…',noMatch:'Nothing matches.',tryClear:'Try clearing the search or the filters.',
+ via:s=>'via '+s,hearing:d=>'Hearing '+d,overdue:'Overdue',markDone:'Mark done',
+ openCasesN:n=>n+' open case'+(n===1?'':'s'),openTasksN:n=>n+' open task'+(n===1?'':'s'),
+ casesN:(n,o)=>n+' case'+(n===1?'':'s')+(o?`, ${o} open`:''),caseWord:'Case',
+ saveChanges:'Save changes',cancel:'Cancel',del:'Delete',delAgain:'Click again to delete',deleted:'Deleted',saved:'Saved',
+ fillIn:'Please fill in: ',exampleTag:'Example',isExample:'This is an example record.',
+ taskDone:'Task done',taskReopened:'Task reopened',
+ errPerm:'You don\'t have permission to change this. Try signing out and in again.',errQuota:'The database is full. Delete some old records.',errSave:'Couldn\'t save. Check your connection and try again.',errDel:'Couldn\'t delete. Try again.',
+ relCases:'This client\'s cases',noCases:'No cases yet.',newCaseFor:'+ New case for this client',openTasksH:'Open tasks',noOpenTasks:'No open tasks.',newTaskForClient:'+ New task for this client',
+ tasksForCase:'Tasks for this case',noTasks:'No tasks yet.',newTaskForCase:'+ New task for this case',
+ didSign:'Did this person sign with you?',signExplain:'This creates a client from the lead\'s details and then lets you open their first case.',becameClient:'Became a client',nowClient:'Now a client',
+ converted:n=>n+' is now a client. Now open their case.',caseTitleDefault:t=>t+' claim',
+ notConnTitle:'Not connected',notConnBody:'Couldn\'t load data from Supabase. Check your internet connection and reload the page.',loadingData:'Loading your data…',
+ welcomeTitle:'Welcome. Your CRM is empty, which is normal on day one.',
+ welcomeSteps:'<li><strong>Team tab:</strong> add yourself and anyone who works with you.</li><li><strong>Leads tab:</strong> add people who contacted you about a claim.</li><li>When a lead signs, open it and press <strong>Became a client</strong>. It moves to Clients and lets you open a case.</li><li><strong>Tasks tab:</strong> add to-dos with due dates, like "Send demand letter".</li><li>Come back here to see your numbers.</li>',
+ welcomeEx:'Want to look around first? Load some example records. They\'re labelled <span class="ex">Example</span> and you can remove them all with one button later.',
+ loadEx:'Load example data',addingEx:'Adding examples…',exAdded:'Examples added. Click around and explore.',exFail:'Couldn\'t add all the examples. Try again.',
+ exBanner:'You\'re looking at example data. Remove it when you\'re ready to use the CRM for real.',removeEx:'Remove all examples',removeAgain:'Click again to remove',removing:'Removing…',exRemoved:'Examples removed. Your CRM is ready for real data.',removeFail:'Couldn\'t remove everything. Try again.',
+ wholeBiz:'The whole business',k_newLeads:'New leads this month',k_leadsTotal:n=>n+' leads in total',k_signed:'Leads that signed',k_ofDecided:(a,b)=>`${a} of ${b} decided leads`,
+ k_open:'Open cases',k_claimed:a=>a+' being claimed',k_won:'Cases won or settled',k_outcomes:(w,s,l)=>`${w} won · ${s} settled · ${l} lost`,k_overdue:'Overdue tasks',k_openTotal:n=>n+' open tasks in total',
+ byStage:'Open cases by stage',dueWeek:'Due in the next 7 days',nothingDue:'Nothing due this week.',
+ myPerf:'My performance',iAm:'I am',chooseName:'Choose your name',addTeamFirst:'Add people on the Team tab, then pick your name here to see your own numbers.',pickName:'Pick your name above. This page remembers it on this device.',
+ k_mySigned:'My leads that signed',k_ofDecidedShort:(a,b)=>`${a} of ${b} decided`,k_myOpen:'My open cases',k_myWon:'My cases won or settled',k_doneMonth:'Tasks done this month',k_stillOpen:n=>n+' still open',k_myOverdue:'My overdue tasks',checkTasks:'Check the Tasks tab',allOnTime:'All on time'
+},
+he:{
+ brand:'בדק צדק',brandSub:'CRM',
+ connecting:'מתחבר לנתונים המשותפים…',live:'מחובר: שינויים מופיעים אצל כולם',notConnected:'לא מחובר',connLost:'החיבור נותק',
+ bannerNoDb:'לא ניתן להתחבר ל־Supabase. בדקו את חיבור האינטרנט ורעננו את הדף.',notConfigured:'עדיין לא הוגדר',signedOut:'לא מחובר',configTitle:'כמעט סיימנו: חברו את פרויקט ה־Supabase',configBody:'פתחו את הקובץ בעורך טקסט (גם Notepad מתאים). בראש הקובץ, החליפו את PASTE_PROJECT_URL_HERE ואת PASTE_PUBLISHABLE_KEY_HERE בכתובת הפרויקט ובמפתח ה־publishable מ־Supabase. שמרו את הקובץ ופתחו אותו מחדש.',loginTitle:'כניסה למערכת',loginExplain:'השתמשו באימייל ובסיסמה שנוצרו עבורכם ב־Supabase.',password:'סיסמה',signIn:'כניסה',signingIn:'מתחבר…',loginFail:'אימייל או סיסמה שגויים. נסו שוב.',signOut:'יציאה',bannerLost:'החיבור לנתונים המשותפים נותק. רעננו את הדף כדי להתחבר מחדש.',
+ tab_dash:'לוח בקרה',tab_leads:'לידים',tab_clients:'לקוחות',tab_cases:'תיקים',tab_tasks:'משימות',tab_team:'צוות',
+ exp_leads:'אנשים שעשויים לשכור את שירותיכם אבל עדיין לא חתמו. כשמישהו מסכים, פתחו את הליד ולחצו על "הפך ללקוח" כדי להעביר אותו ללקוחות.',
+ exp_clients:'אנשים שחתמו אצלכם. פתחו לקוח כדי לראות את כל התיקים והמשימות שלו במקום אחד.',
+ exp_cases:'התביעות עצמן. כל תיק שייך ללקוח אחד ועובר בין שלבים, מ"תיק חדש" ועד זכייה, פשרה או הפסד.',
+ exp_tasks:'דברים שצריך לעשות, עם תאריך יעד ואדם אחראי. סמנו את התיבה כשהמשימה בוצעה. תאריכים באדום הם באיחור.',
+ exp_team:'כל מי שעובד על לידים ותיקים. הוסיפו כאן אנשים קודם, כדי שתוכלו להקצות להם עבודה.',
+ hint_leads:'מישהו שפנה אליכם בנוגע לתביעה.',hint_clients:'מישהו שחתם אצלכם.',hint_cases:'תביעה אחת של לקוח אחד.',hint_tasks:'משהו שמישהו צריך לעשות עד תאריך מסוים.',hint_team:'אדם שעובד איתכם.',
+ new_leads:'ליד חדש',new_clients:'לקוח חדש',new_cases:'תיק חדש',new_tasks:'משימה חדשה',new_team:'איש צוות חדש',
+ edit_leads:'עריכת ליד',edit_clients:'עריכת לקוח',edit_cases:'עריכת תיק',edit_tasks:'עריכת משימה',edit_team:'עריכת איש צוות',
+ add_leads:'הוספת ליד',add_clients:'הוספת לקוח',add_cases:'הוספת תיק',add_tasks:'הוספת משימה',add_team:'הוספת איש צוות',
+ added_leads:'הליד נוסף',added_clients:'הלקוח נוסף',added_cases:'התיק נוסף',added_tasks:'המשימה נוספה',added_team:'איש הצוות נוסף',
+ empty_leads:'עדיין אין לידים.',empty_clients:'עדיין אין לקוחות.',empty_cases:'עדיין אין תיקים.',empty_tasks:'עדיין אין משימות.',empty_team:'עדיין אין אנשי צוות.',
+ search_leads:'חיפוש לידים…',search_clients:'חיפוש לקוחות…',search_cases:'חיפוש תיקים…',search_tasks:'חיפוש משימות…',search_team:'חיפוש בצוות…',
+ pressNew:b=>`לחצו על "${b}" כדי להוסיף את הראשון.`,tipTeam:'טיפ: הוסיפו קודם את הצוות (בלשונית צוות), כדי שתוכלו להקצות עבודה.',
+ f_name:'שם מלא',f_role:'תפקיד (למשל מכירות, מנהל/ת תיקים)',f_phone:'טלפון',f_email:'אימייל',f_claimTypeQ:'על מה התביעה?',f_source:'איך הגיעו אליכם?',f_status:'סטטוס',
+ f_ownerLead:'מי מטפל בליד',f_notes:'הערות',f_ownerClient:'איש הקשר בצוות',f_title:'שם קצר לתיק (למשל "פיקדון מול בעל הדירה")',f_client:'לקוח',
+ f_claimType:'סוג התביעה',f_amount:'סכום התביעה (₪)',f_stage:'שלב',f_hearing:'תאריך דיון',f_ownerCase:'מי מטפל בתיק',
+ f_taskTitle:'מה צריך לעשות',f_due:'תאריך יעד',f_ownerTask:'מי מבצע',f_caseRel:'תיק קשור (לא חובה)',f_clientRel:'לקוח קשור (לא חובה)',
+ everyone:'כולם',unassigned:'לא משויך',chooseClient:'בחרו לקוח',none:'ללא',noClient:'ללא לקוח',
+ showClosedCases:'הצגת תיקים סגורים',showClosedLeads:'הצגת לידים שהומרו או ירדו',showDone:'הצגת משימות שבוצעו',
+ loading:'טוען…',noMatch:'לא נמצאו תוצאות.',tryClear:'נסו לנקות את החיפוש או את המסננים.',
+ via:s=>'מקור: '+s,hearing:d=>'דיון ב־'+d,overdue:'באיחור',markDone:'סימון כבוצע',
+ openCasesN:n=>n===1?'תיק פתוח אחד':n+' תיקים פתוחים',openTasksN:n=>n===1?'משימה פתוחה אחת':n+' משימות פתוחות',
+ casesN:(n,o)=>(n===1?'תיק אחד':n+' תיקים')+(o?`, ${o} פתוחים`:''),caseWord:'תיק',
+ saveChanges:'שמירת שינויים',cancel:'ביטול',del:'מחיקה',delAgain:'לחצו שוב כדי למחוק',deleted:'נמחק',saved:'נשמר',
+ fillIn:'יש למלא: ',exampleTag:'דוגמה',isExample:'זו רשומת דוגמה.',
+ taskDone:'המשימה בוצעה',taskReopened:'המשימה נפתחה מחדש',
+ errPerm:'אין לכם הרשאה לשנות את זה. נסו לצאת ולהיכנס שוב.',errQuota:'מאגר הנתונים מלא. מחקו רשומות ישנות.',errSave:'השמירה נכשלה. בדקו את החיבור ונסו שוב.',errDel:'המחיקה נכשלה. נסו שוב.',
+ relCases:'התיקים של הלקוח',noCases:'עדיין אין תיקים.',newCaseFor:'+ תיק חדש ללקוח הזה',openTasksH:'משימות פתוחות',noOpenTasks:'אין משימות פתוחות.',newTaskForClient:'+ משימה חדשה ללקוח הזה',
+ tasksForCase:'משימות בתיק',noTasks:'עדיין אין משימות.',newTaskForCase:'+ משימה חדשה לתיק הזה',
+ didSign:'האם האדם הזה חתם אצלכם?',signExplain:'הפעולה יוצרת לקוח מפרטי הליד ומאפשרת לפתוח לו את התיק הראשון.',becameClient:'הפך ללקוח',nowClient:'הפך ללקוח',
+ converted:n=>n+' הוא עכשיו לקוח. פתחו לו תיק.',caseTitleDefault:t=>'תביעת '+t,
+ notConnTitle:'לא מחובר',notConnBody:'לא ניתן לטעון נתונים מ־Supabase. בדקו את חיבור האינטרנט ורעננו את הדף.',loadingData:'טוען את הנתונים שלכם…',
+ welcomeTitle:'ברוכים הבאים. המערכת ריקה, וזה בסדר גמור ביום הראשון.',
+ welcomeSteps:'<li><strong>לשונית צוות:</strong> הוסיפו את עצמכם ואת כל מי שעובד איתכם.</li><li><strong>לשונית לידים:</strong> הוסיפו אנשים שפנו אליכם בנוגע לתביעה.</li><li>כשליד חותם, פתחו אותו ולחצו על <strong>הפך ללקוח</strong>. הוא יעבור ללקוחות ותוכלו לפתוח לו תיק.</li><li><strong>לשונית משימות:</strong> הוסיפו משימות עם תאריכי יעד, למשל "לשלוח מכתב התראה".</li><li>חזרו לכאן כדי לראות את המספרים שלכם.</li>',
+ welcomeEx:'רוצים להסתכל קודם? טענו רשומות לדוגמה. הן מסומנות <span class="ex">דוגמה</span> ואפשר להסיר את כולן בלחיצה אחת אחר כך.',
+ loadEx:'טעינת נתוני דוגמה',addingEx:'מוסיף דוגמאות…',exAdded:'הדוגמאות נוספו. הסתובבו ותתנסו.',exFail:'לא כל הדוגמאות נוספו. נסו שוב.',
+ exBanner:'אתם רואים נתוני דוגמה. הסירו אותם כשתהיו מוכנים לעבוד עם המערכת באמת.',removeEx:'הסרת כל הדוגמאות',removeAgain:'לחצו שוב כדי להסיר',removing:'מסיר…',exRemoved:'הדוגמאות הוסרו. המערכת מוכנה לנתונים אמיתיים.',removeFail:'לא הכול הוסר. נסו שוב.',
+ wholeBiz:'העסק כולו',k_newLeads:'לידים חדשים החודש',k_leadsTotal:n=>n+' לידים בסך הכול',k_signed:'לידים שחתמו',k_ofDecided:(a,b)=>`${a} מתוך ${b} לידים שהוכרעו`,
+ k_open:'תיקים פתוחים',k_claimed:a=>a+' בתביעה',k_won:'תיקים בזכייה או בפשרה',k_outcomes:(w,s,l)=>`${w} זכייה · ${s} פשרה · ${l} הפסד`,k_overdue:'משימות באיחור',k_openTotal:n=>n+' משימות פתוחות בסך הכול',
+ byStage:'תיקים פתוחים לפי שלב',dueWeek:'לביצוע בשבעת הימים הקרובים',nothingDue:'אין משימות לשבוע הקרוב.',
+ myPerf:'הביצועים שלי',iAm:'אני',chooseName:'בחרו את שמכם',addTeamFirst:'הוסיפו אנשים בלשונית צוות, ואז בחרו כאן את שמכם כדי לראות את המספרים שלכם.',pickName:'בחרו את שמכם למעלה. הדף זוכר את הבחירה במכשיר הזה.',
+ k_mySigned:'הלידים שלי שחתמו',k_ofDecidedShort:(a,b)=>`${a} מתוך ${b} שהוכרעו`,k_myOpen:'התיקים הפתוחים שלי',k_myWon:'התיקים שלי בזכייה או בפשרה',k_doneMonth:'משימות שבוצעו החודש',k_stillOpen:n=>n+' עדיין פתוחות',k_myOverdue:'המשימות שלי באיחור',checkTasks:'בדקו בלשונית משימות',allOnTime:'הכול בזמן'
+}};
+const t=(k,...a)=>{const v=T[lang][k]??T.en[k];return typeof v==='function'?v(...a):v};
+
+const COLS=['team','leads','clients','cases','tasks'];
+const TABS=['dash','leads','clients','cases','tasks','team'];
+const SCHEMAS={
+ team:[{k:'name',l:'f_name',req:1},{k:'role',l:'f_role'}],
+ leads:[{k:'name',l:'f_name',req:1},{k:'phone',l:'f_phone',t:'tel'},{k:'email',l:'f_email',t:'email'},{k:'claimType',l:'f_claimTypeQ',t:'select',o:CLAIM_TYPES},{k:'source',l:'f_source',t:'select',o:SOURCES},{k:'status',l:'f_status',t:'select',o:LEAD_STATUS},{k:'ownerId',l:'f_ownerLead',t:'member'},{k:'notes',l:'f_notes',t:'textarea'}],
+ clients:[{k:'name',l:'f_name',req:1},{k:'phone',l:'f_phone',t:'tel'},{k:'email',l:'f_email',t:'email'},{k:'ownerId',l:'f_ownerClient',t:'member'},{k:'notes',l:'f_notes',t:'textarea'}],
+ cases:[{k:'title',l:'f_title',req:1,full:1},{k:'clientId',l:'f_client',t:'client',req:1},{k:'claimType',l:'f_claimType',t:'select',o:CLAIM_TYPES},{k:'amount',l:'f_amount',t:'number'},{k:'stage',l:'f_stage',t:'select',o:STAGES},{k:'hearingDate',l:'f_hearing',t:'date'},{k:'ownerId',l:'f_ownerCase',t:'member'},{k:'notes',l:'f_notes',t:'textarea'}],
+ tasks:[{k:'title',l:'f_taskTitle',req:1,full:1},{k:'dueDate',l:'f_due',t:'date'},{k:'ownerId',l:'f_ownerTask',t:'member'},{k:'caseId',l:'f_caseRel',t:'case'},{k:'clientId',l:'f_clientRel',t:'client'},{k:'notes',l:'f_notes',t:'textarea'}]
+};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>ymd(new Date());
+const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
+const fmtDate=s=>{if(!s)return '';const [y,m,d]=s.slice(0,10).split('-');return `<bdi class="mono" dir="ltr">${d}/${m}/${y}</bdi>`};
+const money=n=>{try{return (Math.round(Number(n)||0)).toLocaleString(lang==='he'?'he-IL':'en-IL',{style:'currency',currency:'ILS',maximumFractionDigits:0})}catch(e){return '₪'+Math.round(Number(n)||0)}};
+const caseNo=id=>`<bdi class="mono" dir="ltr">#${esc(String(id).slice(-5).toUpperCase())}</bdi>`;
+const caseNoTxt=id=>'#'+String(id).slice(-5).toUpperCase();
+const ltr=s=>`<bdi class="mono" dir="ltr">${esc(s)}</bdi>`;
+
+let db=null,conn='connecting';
+const data={team:[],leads:[],clients:[],cases:[],tasks:[]};
+const loaded={};
+let tab=(()=>{const h=location.hash.slice(1);return TABS.includes(h)?h:(TABS.includes(LS.get('crm.tab'))?LS.get('crm.tab'):'dash')})();
+const filt={q:'',owner:'',closed:false,done:false};
+let me=LS.get('crm.me')||'';
+let sheetState=null;
+
+const byId=(col,id)=>data[col].find(r=>r.id===id);
+const memberName=id=>{const m=byId('team',id);return m?m.name:t('unassigned')};
+const clientName=id=>{const c=byId('clients',id);return c?c.name:''};
+
+function toast(msg){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2800)}
+
+/* ---------- chrome (header, language) ---------- */
+function applyLang(){
+  const root=document.documentElement;root.lang=lang;root.dir=lang==='he'?'rtl':'ltr';
+  $('#brand').innerHTML=lang==='he'
+    ?`<h1>בדק צדק</h1><span class="sub" lang="en">CRM</span>`
+    :`<h1>Bedek Tzedek CRM</h1><span class="sub" lang="he" dir="rtl">בדק צדק</span>`;
+  document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));
+  renderSync();
+}
+function renderSync(){
+  $('#dot').className='dot '+(conn==='on'?'on':['off','lost','config'].includes(conn)?'off':'');
+  $('#syncText').textContent=conn==='on'?t('live'):conn==='off'?t('notConnected'):conn==='lost'?t('connLost'):conn==='config'?t('notConfigured'):conn==='out'?t('signedOut'):t('connecting');
+  const b=$('#banner');
+  if(conn==='off'){b.textContent=t('bannerNoDb');b.hidden=false}else if(conn==='lost'){b.textContent=t('bannerLost');b.hidden=false}else b.hidden=true;
+  const who=$('#who');
+  if(session&&session.user){who.innerHTML=`<bdi dir="ltr">${esc(session.user.email||'')}</bdi><button type="button" class="btn small" id="signOut">${t('signOut')}</button>`;$('#signOut').onclick=()=>{closeSheet();sb.auth.signOut()}}
+  else who.innerHTML='';
+}
+document.querySelector('.lang').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-lang]');if(!b||b.dataset.lang===lang)return;
+  lang=b.dataset.lang;LS.set('crm.lang',lang);applyLang();render();
+  if(sheetState)openForm(sheetState.col,sheetState.rec&&byId(sheetState.col,sheetState.rec.id),sheetState.defaults,true);
+});
+
+/* ---------- tabs ---------- */
+function renderTabs(){
+  const counts={leads:data.leads.filter(l=>!['converted','lost'].includes(l.status)).length,clients:data.clients.length,cases:data.cases.filter(c=>!CLOSED.includes(c.stage)).length,tasks:data.tasks.filter(x=>!x.done).length,team:data.team.length};
+  $('#tabs').innerHTML=TABS.map(k=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}">${t('tab_'+k)}${counts[k]!=null?` <span class="n">${counts[k]}</span>`:''}</button>`).join('');
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;tab=b.dataset.tab;LS.set('crm.tab',tab);filt.q='';filt.owner='';render()});
+
+/* ---------- main render ---------- */
+function render(){
+  const v=$('#view');
+  if(conn==='config'||conn==='out'||conn==='connecting'){
+    $('#tabs').innerHTML='';
+    v.innerHTML=conn==='config'?`<div class="card login"><h3 style="font-family:var(--f-display);font-size:22px">${t('configTitle')}</h3><p class="explain">${esc(t('configBody'))}</p></div>`
+      :conn==='connecting'?`<div class="empty">${t('loading')}</div>`
+      :`<div class="card login"><h3 style="font-family:var(--f-display);font-size:22px">${t('loginTitle')}</h3><p class="explain">${t('loginExplain')}</p>
+        <form id="loginForm" class="fields" style="grid-template-columns:1fr" novalidate>
+         <div class="fld"><label for="lgEmail">${t('f_email')}</label><input id="lgEmail" type="email" autocomplete="username" required></div>
+         <div class="fld"><label for="lgPass">${t('password')}</label><input id="lgPass" type="password" autocomplete="current-password" required></div>
+         <div class="err" id="lgErr" hidden></div>
+         <div><button class="btn primary" type="submit" id="lgBtn">${t('signIn')}</button></div>
+        </form></div>`;
+    return;
+  }
+  renderTabs();
+  const focusId=document.activeElement&&document.activeElement.id;
+  v.innerHTML=tab==='dash'?renderDash():renderListTab(tab);
+  if(focusId==='q'){const q=$('#q');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
+}
+
+function ownerOptions(sel,blank){return `<option value="">${esc(blank)}</option>`+data.team.map(m=>`<option value="${esc(m.id)}"${m.id===sel?' selected':''}>${esc(m.name)}</option>`).join('')}
+
+function renderListTab(col){
+  const isTeam=col==='team';
+  let rows=data[col].slice();
+  const q=filt.q.trim().toLowerCase();
+  if(q)rows=rows.filter(r=>JSON.stringify(r).toLowerCase().includes(q)||(r.clientId&&clientName(r.clientId).toLowerCase().includes(q)));
+  if(filt.owner&&!isTeam)rows=rows.filter(r=>r.ownerId===filt.owner);
+  if(col==='cases'&&!filt.closed)rows=rows.filter(r=>!CLOSED.includes(r.stage));
+  if(col==='leads'&&!filt.closed)rows=rows.filter(r=>!['converted','lost'].includes(r.status));
+  if(col==='tasks'&&!filt.done)rows=rows.filter(r=>!r.done);
+  if(col==='tasks')rows.sort((a,b)=>(a.done-b.done)||((a.dueDate||'9999').localeCompare(b.dueDate||'9999')));
+  else rows.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const toggle=col==='cases'?`<label><input type="checkbox" id="tglClosed"${filt.closed?' checked':''}> ${t('showClosedCases')}</label>`
+    :col==='leads'?`<label><input type="checkbox" id="tglClosed"${filt.closed?' checked':''}> ${esc(t('showClosedLeads'))}</label>`
+    :col==='tasks'?`<label><input type="checkbox" id="tglDone"${filt.done?' checked':''}> ${t('showDone')}</label>`:'';
+  const total=data[col].length;
+  const body=!loaded[col]?`<div class="empty">${t('loading')}</div>`
+   :rows.length?rows.map(r=>rowHTML(col,r)).join('')
+   :total?`<div class="empty"><strong>${t('noMatch')}</strong>${t('tryClear')}</div>`
+   :`<div class="empty"><strong>${t('empty_'+col)}</strong>${col!=='team'&&!data.team.length?t('tipTeam')+'<br>':''}${esc(t('pressNew',t('new_'+col)))}</div>`;
+  return `<section style="display:flex;flex-direction:column;gap:14px">
+   <div class="panel-head"><div><h2>${t('tab_'+col)}</h2><p class="explain">${esc(t('exp_'+col))}</p></div>
+   <button class="btn primary" data-new="${col}"${db?'':' disabled'}>${t('new_'+col)}</button></div>
+   <div class="toolbar"><input type="search" id="q" placeholder="${esc(t('search_'+col))}" value="${esc(filt.q)}" aria-label="${esc(t('search_'+col))}">
+   ${isTeam?'':`<select id="ownerF" aria-label="${esc(t('everyone'))}">${ownerOptions(filt.owner,t('everyone'))}</select>`}${toggle}</div>
+   <div class="list">${body}</div></section>`;
+}
+
+function rowHTML(col,r){
+  const ex=r.example?` <span class="ex">${t('exampleTag')}</span>`:'';
+  if(col==='team'){
+    const open=data.cases.filter(c=>c.ownerId===r.id&&!CLOSED.includes(c.stage)).length;
+    const tasks=data.tasks.filter(x=>x.ownerId===r.id&&!x.done).length;
+    return `<div class="row" tabindex="0" data-open="team" data-id="${esc(r.id)}"><div class="main"><span class="title" dir="auto">${esc(r.name)}${ex}</span><span class="meta" dir="auto">${esc(r.role||'')}</span></div><div class="side"><span class="pill">${t('openCasesN',open)}</span><span class="pill">${t('openTasksN',tasks)}</span></div></div>`;
+  }
+  if(col==='leads'){
+    const cls={new:'stamp',contacted:'accent',qualified:'accent',lost:'bad',converted:'good'}[r.status]||'';
+    return `<div class="row" tabindex="0" data-open="leads" data-id="${esc(r.id)}"><div class="main"><span class="title" dir="auto">${esc(r.name)}${ex}</span><span class="meta"><span>${label(CLAIM_TYPES,r.claimType)}</span><span>${t('via',label(SOURCES,r.source))}</span><span>${esc(memberName(r.ownerId))}</span>${r.phone?ltr(r.phone):''}</span></div><div class="side"><span class="pill ${cls}">${label(LEAD_STATUS,r.status||'new')}</span></div></div>`;
+  }
+  if(col==='clients'){
+    const cs=data.cases.filter(c=>c.clientId===r.id);const open=cs.filter(c=>!CLOSED.includes(c.stage)).length;
+    return `<div class="row" tabindex="0" data-open="clients" data-id="${esc(r.id)}"><div class="main"><span class="title" dir="auto">${esc(r.name)}${ex}</span><span class="meta">${r.phone?ltr(r.phone):''}${r.email?`<bdi dir="ltr">${esc(r.email)}</bdi>`:''}<span>${esc(memberName(r.ownerId))}</span></span></div><div class="side"><span class="pill">${t('casesN',cs.length,open)}</span></div></div>`;
+  }
+  if(col==='cases'){
+    const cls=r.stage==='won'||r.stage==='settled'?'good':r.stage==='lost'?'bad':r.stage==='hearing'?'stamp':'accent';
+    const hear=r.hearingDate&&!CLOSED.includes(r.stage)?`<span>${t('hearing',fmtDate(r.hearingDate))}</span>`:'';
+    return `<div class="row" tabindex="0" data-open="cases" data-id="${esc(r.id)}"><div class="main"><span class="title"><span style="color:var(--muted);font-weight:400">${caseNo(r.id)}</span> <bdi dir="auto">${esc(r.title)}</bdi>${ex}</span><span class="meta"><bdi dir="auto">${esc(clientName(r.clientId)||t('noClient'))}</bdi><span>${label(CLAIM_TYPES,r.claimType)}</span>${r.amount?`<span class="mono">${money(r.amount)}</span>`:''}${hear}<span>${esc(memberName(r.ownerId))}</span></span></div><div class="side"><span class="pill ${cls}">${label(STAGES,r.stage||'new')}</span></div></div>`;
+  }
+  if(col==='tasks'){
+    const od=!r.done&&r.dueDate&&r.dueDate<today();
+    const cs=r.caseId&&byId('cases',r.caseId);
+    const link=cs?`<span>${t('caseWord')} ${caseNo(r.caseId)} <bdi dir="auto">${esc(cs.title)}</bdi></span>`:r.clientId?`<bdi dir="auto">${esc(clientName(r.clientId))}</bdi>`:'';
+    return `<div class="row task${r.done?' done':''}" tabindex="0" data-open="tasks" data-id="${esc(r.id)}"><input type="checkbox" data-done="${esc(r.id)}"${r.done?' checked':''} aria-label="${t('markDone')}"><div class="main"><span class="title" dir="auto">${esc(r.title)}${ex}</span><span class="meta">${link}<span>${esc(memberName(r.ownerId))}</span></span></div><div class="side">${r.dueDate?`<span class="${od?'overdue':''}" style="font-size:13px">${od?t('overdue')+' · ':''}${fmtDate(r.dueDate)}</span>`:''}</div></div>`;
+  }
+}
+
+/* ---------- dashboard ---------- */
+function stats(ownerId){
+  const f=r=>!ownerId||r.ownerId===ownerId;
+  const leads=data.leads.filter(f),cases=data.cases.filter(f),tasks=data.tasks.filter(f);
+  const now=new Date();const ms=new Date(now.getFullYear(),now.getMonth(),1).toISOString();
+  const conv=leads.filter(l=>l.status==='converted').length;
+  const decided=leads.filter(l=>['converted','lost'].includes(l.status)).length;
+  const open=cases.filter(c=>!CLOSED.includes(c.stage));
+  const won=cases.filter(c=>c.stage==='won').length,set=cases.filter(c=>c.stage==='settled').length,lost=cases.filter(c=>c.stage==='lost').length;
+  const td=today();
+  return {leadsMonth:leads.filter(l=>(l.createdAt||'')>=ms).length,leadsTotal:leads.length,conv,decided,
+    open:open.length,openAmt:open.reduce((s,c)=>s+(Number(c.amount)||0),0),won,set,lost,closed:won+set+lost,
+    tasksOpen:tasks.filter(x=>!x.done).length,overdue:tasks.filter(x=>!x.done&&x.dueDate&&x.dueDate<td).length,
+    doneMonth:tasks.filter(x=>x.done&&(x.doneAt||'')>=ms).length,tasks};
+}
+const pct=(a,b)=>b?`<bdi dir="ltr">${Math.round(a/b*100)}%</bdi>`:'—';
+const kpi=(lab,val,sub)=>`<div class="kpi"><span class="lab">${lab}</span><span class="val">${val}</span><span class="sub">${sub}</span></div>`;
+
+function renderDash(){
+  if(conn==='off')return `<div class="card"><h3>${t('notConnTitle')}</h3><p class="explain">${t('notConnBody')}</p></div>`;
+  if(!COLS.every(c=>loaded[c]))return `<div class="empty">${t('loadingData')}</div>`;
+  const allEmpty=COLS.every(c=>!data[c].length);
+  const anyExample=COLS.some(c=>data[c].some(r=>r.example));
+  if(allEmpty)return `<div class="card welcome"><h3 style="font-family:var(--f-display);font-size:22px">${t('welcomeTitle')}</h3><ol>${t('welcomeSteps')}</ol>
+   <p class="explain">${t('welcomeEx')}</p><div><button class="btn primary" id="loadEx">${t('loadEx')}</button></div></div>`;
+  const s=stats('');
+  const counts=STAGES.filter(st=>!CLOSED.includes(st[0])).map(st=>[label(STAGES,st[0]),data.cases.filter(c=>c.stage===st[0]||(!c.stage&&st[0]==='new')).length]);
+  const max=Math.max(1,...counts.map(c=>c[1]));
+  const meValid=me&&byId('team',me);
+  const p=meValid?stats(me):null;
+  const td=today(),soon=addDays(7);
+  const due=(meValid?p.tasks:data.tasks).filter(x=>!x.done&&x.dueDate&&x.dueDate<=soon).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,8);
+  return `<section style="display:flex;flex-direction:column;gap:16px">
+  ${anyExample?`<div class="toolbar" style="justify-content:space-between;background:var(--stamp-soft);padding:8px 12px;border-radius:var(--r)"><span style="font-size:14px">${t('exBanner')}</span><button class="btn small" id="clearEx">${t('removeEx')}</button></div>`:''}
+  <div class="section-title"><h3>${t('wholeBiz')}</h3></div>
+  <div class="kpis">
+   ${kpi(t('k_newLeads'),s.leadsMonth,t('k_leadsTotal',s.leadsTotal))}
+   ${kpi(t('k_signed'),pct(s.conv,s.decided),t('k_ofDecided',s.conv,s.decided))}
+   ${kpi(t('k_open'),s.open,t('k_claimed',money(s.openAmt)))}
+   ${kpi(t('k_won'),pct(s.won+s.set,s.closed),t('k_outcomes',s.won,s.set,s.lost))}
+   ${kpi(t('k_overdue'),`<span${s.overdue?' class="overdue"':''}>${s.overdue}</span>`,t('k_openTotal',s.tasksOpen))}
+  </div>
+  <div class="grid2">
+   <div class="card"><h3>${t('byStage')}</h3><div class="bars">${counts.map(([l,n])=>`<div class="bar"><span>${l}</span><span class="track"><span class="fill" style="width:${n/max*100}%"></span></span><span class="num mono">${n}</span></div>`).join('')}</div></div>
+   <div class="card"><h3>${t('dueWeek')}${meValid?` · ${esc(byId('team',me).name)}`:''}</h3>
+    ${due.length?`<div class="list">${due.map(x=>`<div class="row" tabindex="0" data-open="tasks" data-id="${esc(x.id)}" style="padding:8px 12px"><div class="main"><span class="title" dir="auto" style="font-weight:500">${esc(x.title)}</span><span class="meta">${esc(memberName(x.ownerId))}</span></div><div class="side"><span class="${x.dueDate<td?'overdue':''}" style="font-size:13px">${fmtDate(x.dueDate)}</span></div></div>`).join('')}</div>`:`<p class="explain" style="margin:0">${t('nothingDue')}</p>`}</div>
+  </div>
+  <div class="section-title"><h3>${t('myPerf')}</h3>
+   <label class="toolbar" style="font-size:14px;color:var(--muted)">${t('iAm')} <select id="meSel" style="font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink)">${ownerOptions(meValid?me:'',t('chooseName'))}</select></label></div>
+  ${!data.team.length?`<p class="explain">${t('addTeamFirst')}</p>`
+   :!meValid?`<p class="explain">${t('pickName')}</p>`
+   :`<div class="kpis">
+     ${kpi(t('k_mySigned'),pct(p.conv,p.decided),t('k_ofDecidedShort',p.conv,p.decided))}
+     ${kpi(t('k_myOpen'),p.open,t('k_claimed',money(p.openAmt)))}
+     ${kpi(t('k_myWon'),pct(p.won+p.set,p.closed),t('k_outcomes',p.won,p.set,p.lost))}
+     ${kpi(t('k_doneMonth'),p.doneMonth,t('k_stillOpen',p.tasksOpen))}
+     ${kpi(t('k_myOverdue'),`<span${p.overdue?' class="overdue"':''}>${p.overdue}</span>`,p.overdue?t('checkTasks'):t('allOnTime'))}
+    </div>`}
+  </section>`;
+}
+
+/* ---------- events on view ---------- */
+const view=$('#view');
+view.addEventListener('input',e=>{if(e.target.id==='q'){filt.q=e.target.value;render()}});
+view.addEventListener('change',async e=>{
+  const id=e.target.id;
+  if(id==='ownerF'){filt.owner=e.target.value;render()}
+  else if(id==='tglClosed'){filt.closed=e.target.checked;render()}
+  else if(id==='tglDone'){filt.done=e.target.checked;render()}
+  else if(id==='meSel'){me=e.target.value;LS.set('crm.me',me);render()}
+  else if(e.target.dataset.done){
+    const x=byId('tasks',e.target.dataset.done);if(!x)return;
+    const done=e.target.checked;
+    await save('tasks',x.id,{...strip(x),done,doneAt:done?new Date().toISOString():null},done?t('taskDone'):t('taskReopened'));
+  }
+});
+view.addEventListener('click',e=>{
+  if(e.target.closest('input[type=checkbox]'))return;
+  const n=e.target.closest('[data-new]');if(n){openForm(n.dataset.new);return}
+  const r=e.target.closest('[data-open]');if(r){openForm(r.dataset.open,byId(r.dataset.open,r.dataset.id));return}
+  if(e.target.id==='loadEx')loadExamples();
+  if(e.target.id==='clearEx')clearExamples(e.target);
+});
+view.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('.row[data-open]'))e.target.click()});
+
+/* ---------- writes ---------- */
+function strip(r){const o={...r};delete o.id;return o}
+async function save(col,id,body,msg){
+  if(!db)return false;
+  try{const ref=id?db.collection(col).doc(id):db.collection(col).doc();await ref.set(body);if(msg)toast(msg);return ref.id}
+  catch(err){toast(err&&err.code==='invalid_argument'?t('errPerm'):err&&err.code==='quota_exceeded'?t('errQuota'):t('errSave'));return false}
+}
+async function remove(col,id){try{await db.collection(col).doc(id).delete();toast(t('deleted'));return true}catch(err){toast(t('errDel'));return false}}
+
+/* ---------- form sheet ---------- */
+function fieldHTML(f,val){
+  const id='f_'+f.k,req=f.req?' required':'';
+  const full=f.full||f.t==='textarea'?' full':'';
+  let input;
+  if(f.t==='textarea')input=`<textarea id="${id}" dir="auto">${esc(val)}</textarea>`;
+  else if(f.t==='select')input=`<select id="${id}">${f.o.map(o=>`<option value="${o[0]}"${o[0]===(val||f.o[0][0])?' selected':''}>${label(f.o,o[0])}</option>`).join('')}</select>`;
+  else if(f.t==='member')input=`<select id="${id}">${ownerOptions(val,t('unassigned'))}</select>`;
+  else if(f.t==='client')input=`<select id="${id}"${req}><option value="">${f.req?t('chooseClient'):t('none')}</option>${data.clients.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`;
+  else if(f.t==='case')input=`<select id="${id}"><option value="">${t('none')}</option>${data.cases.map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${caseNoTxt(c.id)} ${esc(c.title)}</option>`).join('')}</select>`;
+  else input=`<input id="${id}" type="${f.t||'text'}" value="${esc(val)}"${f.t==='number'?' min="0" step="1" inputmode="numeric"':''}${f.t?'':' dir="auto"'}${req}>`;
+  return `<div class="fld${full}"><label for="${id}">${esc(t(f.l))}${f.req?' *':''}</label>${input}</div>`;
+}
+
+function relatedHTML(col,rec){
+  if(!rec)return '';
+  const mini=(c,r,txt,side)=>`<div class="row" data-open="${c}" data-id="${esc(r.id)}"><div class="main"><span class="title" style="font-weight:500">${txt}</span></div><div class="side">${side||''}</div></div>`;
+  if(col==='clients'){
+    const cs=data.cases.filter(c=>c.clientId===rec.id),ts=data.tasks.filter(x=>x.clientId===rec.id&&!x.done);
+    return `<div class="related"><h4>${t('relCases')}</h4>${cs.length?`<div class="list">${cs.map(c=>mini('cases',c,`${caseNo(c.id)} <bdi dir="auto">${esc(c.title)}</bdi>`,`<span class="pill">${label(STAGES,c.stage)}</span>`)).join('')}</div>`:`<span class="explain" style="margin:0">${t('noCases')}</span>`}
+    <div><button type="button" class="btn small" data-sub="cases">${t('newCaseFor')}</button></div>
+    <h4>${t('openTasksH')}</h4>${ts.length?`<div class="list">${ts.map(x=>mini('tasks',x,`<bdi dir="auto">${esc(x.title)}</bdi>`,x.dueDate?`<span style="font-size:13px">${fmtDate(x.dueDate)}</span>`:'')).join('')}</div>`:`<span class="explain" style="margin:0">${t('noOpenTasks')}</span>`}
+    <div><button type="button" class="btn small" data-sub="tasks">${t('newTaskForClient')}</button></div></div>`;
+  }
+  if(col==='cases'){
+    const ts=data.tasks.filter(x=>x.caseId===rec.id);
+    return `<div class="related"><h4>${t('tasksForCase')}</h4>${ts.length?`<div class="list">${ts.map(x=>mini('tasks',x,(x.done?'✓ ':'')+`<bdi dir="auto">${esc(x.title)}</bdi>`,x.dueDate?`<span style="font-size:13px">${fmtDate(x.dueDate)}</span>`:'')).join('')}</div>`:`<span class="explain" style="margin:0">${t('noTasks')}</span>`}
+    <div><button type="button" class="btn small" data-sub="tasks">${t('newTaskForCase')}</button></div></div>`;
+  }
+  if(col==='leads'&&rec.status!=='converted'){
+    return `<div class="related"><h4>${t('didSign')}</h4><span class="explain" style="margin:0">${t('signExplain')}</span><div><button type="button" class="btn primary small" id="convert">${t('becameClient')}</button></div></div>`;
+  }
+  if(col==='leads'&&rec.clientId&&byId('clients',rec.clientId)){
+    return `<div class="related"><h4>${t('nowClient')}</h4><div class="list">${mini('clients',byId('clients',rec.clientId),`<bdi dir="auto">${esc(clientName(rec.clientId))}</bdi>`)}</div></div>`;
+  }
+  return '';
+}
+
+function closeSheet(){$('#sheetRoot').innerHTML='';sheetState=null}
+
+function openForm(col,rec,defaults,keepValues){
+  const schema=SCHEMAS[col];
+  /* when switching language with a form open, keep what the person already typed */
+  let typed=null;
+  if(keepValues&&sheetState){typed={};for(const f of schema){const el=$('#f_'+f.k);if(el)typed[f.k]=el.value}}
+  const vals={...(rec||defaults||{}),...(typed||{})};
+  if(!rec&&!typed&&col==='tasks'&&!vals.dueDate)vals.dueDate=addDays(2);
+  if(!rec&&!typed&&!vals.ownerId&&col!=='team'&&me&&byId('team',me))vals.ownerId=me;
+  sheetState={col,rec,defaults};
+  const root=$('#sheetRoot');
+  root.innerHTML=`<div class="overlay" id="ov"><form class="sheet" id="sheet" novalidate>
+   <h2>${rec?t('edit_'+col):t('new_'+col)}${col==='cases'&&rec?` <span style="font-size:16px;color:var(--muted)">${caseNo(rec.id)}</span>`:''}</h2>
+   <p class="hint">${t('hint_'+col)}${rec&&rec.example?' '+t('isExample'):''}</p>
+   <div class="fields">${schema.map(f=>fieldHTML(f,vals[f.k])).join('')}</div>
+   <div class="err" id="formErr" hidden></div>
+   <div class="actions">${rec?`<button type="button" class="btn danger" id="del">${t('del')}</button>`:''}<div class="end"><button type="button" class="btn" id="cancel">${t('cancel')}</button><button type="submit" class="btn primary">${rec?t('saveChanges'):t('add_'+col)}</button></div></div>
+   ${relatedHTML(col,rec)}
+  </form></div>`;
+  const first=root.querySelector('input,select,textarea');if(first&&!rec&&!typed)first.focus();
+  $('#cancel').onclick=closeSheet;
+  $('#ov').addEventListener('mousedown',e=>{if(e.target.id==='ov')closeSheet()});
+  root.onkeydown=e=>{if(e.key==='Escape')closeSheet()};
+  $('#sheet').onsubmit=async e=>{
+    e.preventDefault();
+    const body=rec?strip(rec):{createdAt:new Date().toISOString()};
+    for(const f of schema){let v=$('#f_'+f.k).value;if(f.t==='number')v=v===''?null:Number(v);body[f.k]=typeof v==='string'?v.trim():v}
+    const missing=schema.filter(f=>f.req&&!body[f.k]);
+    if(missing.length){const er=$('#formErr');er.textContent=t('fillIn')+missing.map(f=>t(f.l).replace(/ \(.*/,'')).join(', ');er.hidden=false;return}
+    if(col==='leads'&&!body.status)body.status='new';
+    if(col==='cases'){if(!body.stage)body.stage='new';const was=rec&&CLOSED.includes(rec.stage),is=CLOSED.includes(body.stage);body.closedAt=is?(was?rec.closedAt:new Date().toISOString()):null}
+    if(col==='tasks'&&!rec){body.done=false;body.doneAt=null}
+    if(col==='tasks'&&body.caseId&&!body.clientId){const c=byId('cases',body.caseId);if(c)body.clientId=c.clientId}
+    const ok=await save(col,rec&&rec.id,body,rec?t('saved'):t('added_'+col));
+    if(ok)closeSheet();
+  };
+  const del=$('#del');
+  if(del)del.onclick=async()=>{
+    if(!del.classList.contains('armed')){del.classList.add('armed');del.textContent=t('delAgain');setTimeout(()=>{if(del.isConnected){del.classList.remove('armed');del.textContent=t('del')}},4000);return}
+    if(await remove(col,rec.id))closeSheet();
+  };
+  root.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{
+    const d=col==='clients'?{clientId:rec.id,ownerId:rec.ownerId}:{caseId:rec.id,clientId:rec.clientId,ownerId:rec.ownerId};
+    openForm(b.dataset.sub,null,d)});
+  root.querySelectorAll('.related [data-open]').forEach(r=>r.onclick=()=>openForm(r.dataset.open,byId(r.dataset.open,r.dataset.id)));
+  const cv=$('#convert');
+  if(cv)cv.onclick=async()=>{
+    cv.disabled=true;
+    const client={name:rec.name,phone:rec.phone||'',email:rec.email||'',ownerId:rec.ownerId||'',notes:rec.notes||'',fromLeadId:rec.id,createdAt:new Date().toISOString()};
+    if(rec.example)client.example=true;
+    const cid=await save('clients',null,client);
+    if(!cid){cv.disabled=false;return}
+    await save('leads',rec.id,{...strip(rec),status:'converted',clientId:cid});
+    toast(t('converted',rec.name));
+    openForm('cases',null,{clientId:cid,claimType:rec.claimType,ownerId:rec.ownerId,title:t('caseTitleDefault',label(CLAIM_TYPES,rec.claimType))});
+  };
+}
+
+/* ---------- examples (written in the language currently on screen) ---------- */
+const EX={
+ en:{dana:['Dana Levi','Case manager'],yossi:['Yossi Cohen','Sales'],noa:'Noa Friedman',noaN:'Landlord kept a ₪6,000 deposit. Wants a call after 17:00.',avi:'Avi Mizrahi',aviN:'Flight delayed 9 hours. Sent him the document checklist.',rina:'Rina Shapiro',moshe:'Moshe Katz',mosheN:'Decided not to proceed.',eli:'Eli Ben-David',
+  k1:'Renovation left unfinished',k2:'Flight cancelled, no refund',k3:'Faulty washing machine',t1:'Call Noa back about her deposit',t2:'Follow up: did the contractor reply to the demand letter?',t3:'Prepare hearing documents',t4:'Send Eli the court ruling'},
+ he:{dana:['דנה לוי','מנהלת תיקים'],yossi:['יוסי כהן','מכירות'],noa:'נועה פרידמן',noaN:'בעל הדירה עיכב פיקדון של 6,000 ₪. מבקשת שיחה אחרי 17:00.',avi:'אבי מזרחי',aviN:'הטיסה התעכבה 9 שעות. שלחנו לו רשימת מסמכים.',rina:'רינה שפירא',moshe:'משה כץ',mosheN:'החליט לא להמשיך.',eli:'אלי בן דוד',
+  k1:'שיפוץ שלא הושלם',k2:'טיסה בוטלה ללא החזר',k3:'מכונת כביסה פגומה',t1:'לחזור לנועה בנוגע לפיקדון',t2:'מעקב: האם הקבלן השיב למכתב ההתראה?',t3:'להכין מסמכים לדיון',t4:'לשלוח לאלי את פסק הדין'}
+};
+async function loadExamples(){
+  const b=$('#loadEx');if(b){b.disabled=true;b.textContent=t('addingEx')}
+  const X=EX[lang];
+  const now=new Date(),iso=d=>new Date(now.getTime()-d*864e5).toISOString();
+  const ref=c=>db.collection(c).doc();
+  const dana=ref('team'),yossi=ref('team'),c1=ref('clients'),c2=ref('clients'),k1=ref('cases'),k2=ref('cases'),k3=ref('cases'),l4=ref('leads');
+  const E={example:true};
+  const writes=[
+   [dana,{name:X.dana[0],role:X.dana[1],createdAt:iso(60),...E}],
+   [yossi,{name:X.yossi[0],role:X.yossi[1],createdAt:iso(60),...E}],
+   [ref('leads'),{name:X.noa,phone:'050-123-4567',claimType:'deposit',source:'website',status:'new',ownerId:yossi.id,notes:X.noaN,createdAt:iso(1),...E}],
+   [ref('leads'),{name:X.avi,phone:'052-987-6543',claimType:'flight',source:'whatsapp',status:'contacted',ownerId:yossi.id,notes:X.aviN,createdAt:iso(4),...E}],
+   [l4,{name:X.rina,phone:'054-222-3344',claimType:'contractor',source:'referral',status:'converted',ownerId:yossi.id,clientId:c1.id,createdAt:iso(20),...E}],
+   [ref('leads'),{name:X.moshe,claimType:'consumer',source:'phone',status:'lost',ownerId:yossi.id,notes:X.mosheN,createdAt:iso(15),...E}],
+   [c1,{name:X.rina,phone:'054-222-3344',email:'rina@example.com',ownerId:dana.id,fromLeadId:l4.id,createdAt:iso(18),...E}],
+   [c2,{name:X.eli,phone:'053-555-1212',ownerId:dana.id,createdAt:iso(45),...E}],
+   [k1,{title:X.k1,clientId:c1.id,claimType:'contractor',amount:24000,stage:'demand',ownerId:dana.id,createdAt:iso(18),closedAt:null,...E}],
+   [k2,{title:X.k2,clientId:c2.id,claimType:'flight',amount:3500,stage:'hearing',hearingDate:addDays(12),ownerId:dana.id,createdAt:iso(45),closedAt:null,...E}],
+   [k3,{title:X.k3,clientId:c2.id,claimType:'consumer',amount:2800,stage:'won',ownerId:dana.id,createdAt:iso(90),closedAt:iso(10),...E}],
+   [ref('tasks'),{title:X.t1,dueDate:addDays(0),ownerId:yossi.id,done:false,doneAt:null,createdAt:iso(1),...E}],
+   [ref('tasks'),{title:X.t2,dueDate:addDays(-2),ownerId:dana.id,caseId:k1.id,clientId:c1.id,done:false,doneAt:null,createdAt:iso(10),...E}],
+   [ref('tasks'),{title:X.t3,dueDate:addDays(7),ownerId:dana.id,caseId:k2.id,clientId:c2.id,done:false,doneAt:null,createdAt:iso(5),...E}],
+   [ref('tasks'),{title:X.t4,dueDate:addDays(-9),ownerId:dana.id,caseId:k3.id,clientId:c2.id,done:true,doneAt:iso(8),createdAt:iso(10),...E}]
+  ];
+  try{for(const [r,body] of writes)await r.set(body);toast(t('exAdded'))}
+  catch(err){toast(t('exFail'));if(b&&b.isConnected){b.disabled=false;b.textContent=t('loadEx')}}
+}
+async function clearExamples(btn){
+  if(!btn.classList.contains('armed')){btn.classList.add('armed','danger');btn.textContent=t('removeAgain');setTimeout(()=>{if(btn.isConnected){btn.classList.remove('armed','danger');btn.textContent=t('removeEx')}},4000);return}
+  btn.disabled=true;btn.textContent=t('removing');
+  try{for(const c of COLS)for(const r of data[c].filter(x=>x.example))await db.collection(c).doc(r.id).delete();
+    if(me&&!byId('team',me)){me='';LS.set('crm.me','')}
+    toast(t('exRemoved'))}
+  catch(e){toast(t('removeFail'));btn.disabled=false}
+}
+
+/* ---------- Supabase connection ----------
+   The rest of the page talks to "db" with simple commands (save a record,
+   delete a record, watch a list). This section translates those commands
+   into Supabase calls, so nothing else in the page had to change. */
+let sb=null,session=null,unsubs=[];
+const loaders={};
+const toSnake=k=>k.replace(/[A-Z]/g,m=>'_'+m.toLowerCase());
+const toCamel=k=>k.replace(/_([a-z])/g,(m,c)=>c.toUpperCase());
+function toRow(body){const o={};for(const k in body){if(k==='id')continue;let v=body[k];if(v===''||v===undefined)v=null;o[toSnake(k)]=v}return o}
+function fromRow(row){const o={};for(const k in row){if(k==='id')continue;const ck=toCamel(k);let v=row[k];if(v!=null&&/At$/.test(ck)){const d=new Date(v);if(!isNaN(d))v=d.toISOString()}if(ck==='amount'&&v!=null)v=Number(v);o[ck]=v}return o}
+function wrapErr(e){const perm=e&&(e.code==='42501'||/row-level security|permission|JWT/i.test(e.message||''));return {code:perm?'invalid_argument':'unavailable',message:(e&&e.message)||''}}
+const newId=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'id-'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+function makeDb(){
+  return {collection(c){return {
+    doc(id){const rid=id||newId();return {id:rid,
+      async set(body){const {error}=await sb.from(c).upsert({id:rid,...toRow(body)});if(error)throw wrapErr(error);loaders[c]&&loaders[c]()},
+      async delete(){const {error}=await sb.from(c).delete().eq('id',rid);if(error)throw wrapErr(error);loaders[c]&&loaders[c]()}}},
+    onSnapshot(next,onErr){
+      let alive=true,timer=null,seq=0;
+      const load=async()=>{const my=++seq;const {data:rows,error}=await sb.from(c).select('*').limit(5000);if(!alive||my!==seq)return;
+        if(error){onErr&&onErr(wrapErr(error));return}
+        next({docs:rows.map(r=>({id:r.id,data:()=>fromRow(r)}))})};
+      loaders[c]=load;
+      const ch=sb.channel('crm-'+c+'-'+newId()).on('postgres_changes',{event:'*',schema:'public',table:c},()=>{clearTimeout(timer);timer=setTimeout(load,250)}).subscribe();
+      load();
+      return ()=>{alive=false;clearTimeout(timer);delete loaders[c];try{sb.removeChannel(ch)}catch(e){}};
+    }}}};
+}
+function setSession(s){
+  const had=!!session;session=s||null;
+  if(session&&!had){
+    db=makeDb();conn='on';
+    for(const c of COLS){loaded[c]=false;
+      unsubs.push(db.collection(c).onSnapshot(snap=>{data[c]=snap.docs.map(d=>({id:d.id,...d.data()}));loaded[c]=true;if(conn!=='on'){conn='on';renderSync()}render()},
+        ()=>{conn='off';renderSync();render()}));
+    }
+  }else if(!session){
+    unsubs.forEach(u=>u());unsubs=[];db=null;
+    for(const c of COLS){data[c]=[];loaded[c]=false}
+    conn='out';
+  }
+  renderSync();render();
+}
+view.addEventListener('submit',async e=>{
+  if(e.target.id!=='loginForm')return;
+  e.preventDefault();
+  const email=$('#lgEmail').value.trim(),password=$('#lgPass').value,btn=$('#lgBtn'),er=$('#lgErr');
+  if(!email||!password){er.textContent=t('loginFail');er.hidden=false;return}
+  btn.disabled=true;btn.textContent=t('signingIn');er.hidden=true;
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error&&btn.isConnected){btn.disabled=false;btn.textContent=t('signIn');er.textContent=t('loginFail');er.hidden=false}
+});
+
+/* ---------- boot ---------- */
+const CFG=window.CRM_CONFIG||{};
+const configured=CFG.url&&CFG.key&&!/PASTE_/.test(CFG.url+CFG.key);
+conn=configured?'connecting':'config';
+applyLang();render();
+if(configured){
+  if(!window.supabase||!window.supabase.createClient){conn='off';renderSync();render()}
+  else{
+    sb=window.supabase.createClient(CFG.url.trim(),CFG.key.trim());
+    sb.auth.onAuthStateChange((event,s)=>{setTimeout(()=>setSession(s),0)});
+  }
+}
+})();
+</script>
