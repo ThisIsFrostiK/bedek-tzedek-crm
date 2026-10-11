@@ -527,7 +527,7 @@ function renderSync(){
   const b=$('#banner');
   if(conn==='off'){b.textContent=t('bannerNoDb');b.hidden=false}else if(conn==='lost'){b.textContent=t('bannerLost');b.hidden=false}else b.hidden=true;
   const who=$('#who');
-  if(session&&session.user){who.innerHTML=`<bdi dir="ltr">${esc(session.user.email||'')}</bdi><button type="button" class="btn small" id="signOut">${t('signOut')}</button>`;$('#signOut').onclick=()=>{closeSheetHard();sb.auth.signOut()}}
+  if(session&&session.user){who.innerHTML=`<bdi dir="ltr">${esc(session.user.email||'')}</bdi><button type="button" class="btn small" id="signOut">${t('signOut')}</button>`;$('#signOut').onclick=doSignOut}
   else who.innerHTML='';
 }
 function setLang(l){
@@ -605,7 +605,7 @@ function openMore(push=true){
   root.querySelectorAll('[data-goto]').forEach(r=>{r.onclick=()=>{const k=r.dataset.goto;sheetStack=[];$('#sheetRoot').innerHTML='';setSheetOpen(false);goTab(k,true)};r.onkeydown=e=>{if(e.key==='Enter')r.click()}});
   root.querySelectorAll('[data-setlang]').forEach(b=>b.onclick=()=>setLang(b.dataset.setlang));
   $('#mTheme').onclick=()=>{toggleTheme();openMore(false)};
-  const out=$('#mOut');if(out)out.onclick=()=>{closeSheetHard();try{history.replaceState({tab,sheet:0},'')}catch(e){}sb.auth.signOut()};
+  const out=$('#mOut');if(out)out.onclick=doSignOut;
 }
 
 /* ---------- main render ---------- */
@@ -971,6 +971,17 @@ function makeDb(){
       load();
       return ()=>{alive=false;clearTimeout(timer);delete loaders[c];try{sb.removeChannel(ch)}catch(e){}};
     }}}};
+}
+/* Sign out that always works: ask Supabase to end the session (waiting at most 4 seconds),
+   then remove the saved login from this device no matter what, and reload to the sign-in screen. */
+let signingOut=false;
+async function doSignOut(){
+  if(signingOut)return;signingOut=true;
+  closeSheetHard();
+  try{if(sb)await Promise.race([sb.auth.signOut({scope:'local'}),new Promise(r=>setTimeout(r,4000))])}catch(e){}
+  try{Object.keys(localStorage).forEach(k=>{if(/^sb-.*-auth-token/.test(k))localStorage.removeItem(k)})}catch(e){}
+  try{sessionStorage.clear()}catch(e){}
+  location.replace(location.pathname+location.search);
 }
 function setSession(s){
   const had=!!session;session=s||null;
